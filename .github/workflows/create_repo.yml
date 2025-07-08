@@ -161,6 +161,9 @@ jobs:
           token: ${{ env.GITHUB_TOKEN }}
           repository: "Maua-Dev/${{needs.process_issue.outputs.project_name}}"
 
+      - name: Wait for repo to be ready
+        run: sleep 10s
+
       - name: Add Branch Protection Dev
         if: ${{startsWith(needs.process_issue.outputs.privacy_type, 'public')}}
         run: |
