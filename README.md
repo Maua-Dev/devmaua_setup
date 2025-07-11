@@ -23,3 +23,4 @@ Anyone who wants to create a new repository for Dev. Community Mauá. 🦧
 - Rodrigo Morales - [RodrigoM2004](https://github.com/RodrigoM2004) 🤯
 - Luigi Trevisan - [LuigiTrevisan](https://github.com/LuigiTrevisan) 🍄
 - Rodrigo Siqueira [Rodrigosiq03](https://github.com/Rodrigosiq03) 🌿
+- Lucas Crapino - [LucasCrapino](https://github.com/LucasCrapino) 🐼
