@@ -51,6 +51,7 @@ body:
         - battlesnake_nodejs_template (TYPESCRIPT)
         - hexagonal_arch_react_template (REACT)
         - challenge_template (PYTHON)
+        - battlesnake_java_template (JAVA)
     validations:
       required: false
   - type: dropdown
