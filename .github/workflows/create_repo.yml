@@ -64,7 +64,25 @@ jobs:
           privacy_type=$(echo $privacy_type | tr -d '\r')
           
           project_template=$(grep -A 2 "### project_template" project_details.txt | tail -n 1)
+          project_template=$(echo $project_template | tr -d '\r')
           project_template=$(echo $project_template | cut -d' ' -f1)
+          template_version=""
+
+          # clean_mss lines resolve to the latest matching release tag at create time
+          case "$project_template" in
+            clean_mss_template_original)
+              project_template="clean_mss_template"
+              template_version="line_original"
+              ;;
+            clean_mss_port_rpc_http)
+              project_template="clean_mss_template"
+              template_version="line_rpc_http"
+              ;;
+            clean_mss_port_rest)
+              project_template="clean_mss_template"
+              template_version="line_rest"
+              ;;
+          esac
 
           team=$(grep -A 2 "### team" project_details.txt | tail -n 1)
           team=$(echo $team | tr -d '\r')
@@ -73,12 +91,14 @@ jobs:
           echo "Description: $description"
           echo "Privacy Type: $privacy_type"
           echo "Project Template: $project_template"
+          echo "Template Version: $template_version"
           echo "Team: $team"
 
           echo "project_name=$project_name" >> $GITHUB_ENV
           echo "description=$description" >> $GITHUB_ENV
           echo "privacy_type=$privacy_type" >> $GITHUB_ENV
           echo "project_template=$project_template" >> $GITHUB_ENV
+          echo "template_version=$template_version" >> $GITHUB_ENV
           echo "team=$team" >> $GITHUB_ENV
       
     outputs:
@@ -86,6 +106,7 @@ jobs:
       description: ${{ env.description }}
       privacy_type: ${{ env.privacy_type }}
       project_template: ${{ env.project_template }}
+      template_version: ${{ env.template_version }}
       team: ${{ env.team }}
 
   create_repo:
@@ -130,20 +151,77 @@ jobs:
           echo "Description: ${{needs.process_issue.outputs.description}}"
           echo "Privacy Type: ${{needs.process_issue.outputs.privacy_type}}"
           echo "Project Template: ${{needs.process_issue.outputs.project_template}}"
+          echo "Template Version: ${{needs.process_issue.outputs.template_version}}"
 
-          if [ "${{needs.process_issue.outputs.project_template}}" == "None" ]; then
-            gh repo create Maua-Dev/${{needs.process_issue.outputs.project_name}} --${{needs.process_issue.outputs.privacy_type}} -d "${{needs.process_issue.outputs.description}}" --add-readme
-          else
-            gh repo create Maua-Dev/${{needs.process_issue.outputs.project_name}} --${{needs.process_issue.outputs.privacy_type}} -d "${{needs.process_issue.outputs.description}}" --template Maua-Dev/${{needs.process_issue.outputs.project_template}}
+          PROJECT_NAME="${{needs.process_issue.outputs.project_name}}"
+          DESCRIPTION="${{needs.process_issue.outputs.description}}"
+          PRIVACY_TYPE="${{needs.process_issue.outputs.privacy_type}}"
+          PROJECT_TEMPLATE="${{needs.process_issue.outputs.project_template}}"
+          TEMPLATE_VERSION="${{needs.process_issue.outputs.template_version}}"
+
+          if [ "$PROJECT_TEMPLATE" == "None" ] || [ -z "$PROJECT_TEMPLATE" ]; then
+            gh repo create "Maua-Dev/$PROJECT_NAME" --$PRIVACY_TYPE -d "$DESCRIPTION" --add-readme
+          elif [ -n "$TEMPLATE_VERSION" ]; then
+            # GitHub template API always uses the default branch; create from a specific tag instead.
+            # line_* keys resolve to the latest release of that clean_mss family.
+            case "$TEMPLATE_VERSION" in
+              line_original)
+                TEMPLATE_VERSION=$(gh api repos/Maua-Dev/clean_mss_template/releases --paginate \
+                  --jq '.[] | "\(.tag_name)\t\(.name)"' \
+                  | awk -F'\t' '$2 ~ /^clean_mss_template_original/ {print $1}' \
+                  | sort -V | tail -n1)
+                ;;
+              line_rpc_http)
+                TEMPLATE_VERSION=$(gh api repos/Maua-Dev/clean_mss_template/releases --paginate \
+                  --jq '.[] | "\(.tag_name)\t\(.name)"' \
+                  | awk -F'\t' '$2 ~ /_rpc_http$/ {print $1}' \
+                  | sort -V | tail -n1)
+                ;;
+              line_rest)
+                TEMPLATE_VERSION=$(gh api repos/Maua-Dev/clean_mss_template/releases --paginate \
+                  --jq '.[] | "\(.tag_name)\t\(.name)"' \
+                  | awk -F'\t' '$2 ~ /_rest$/ {print $1}' \
+                  | sort -V | tail -n1)
+                ;;
+            esac
+
+            if [ -z "$TEMPLATE_VERSION" ]; then
+              echo "Could not resolve a release tag for the selected clean_mss line"
+              exit 1
             fi
-          gh repo edit Maua-Dev/${{needs.process_issue.outputs.project_name}} --enable-issues --delete-branch-on-merge
+
+            echo "Resolved template version/tag: $TEMPLATE_VERSION"
+
+            gh repo create "Maua-Dev/$PROJECT_NAME" --$PRIVACY_TYPE -d "$DESCRIPTION"
+
+            git clone --depth 1 --branch "$TEMPLATE_VERSION" \
+              "https://x-access-token:${GITHUB_TOKEN}@github.com/Maua-Dev/${PROJECT_TEMPLATE}.git" template_src
+
+            cd template_src
+            rm -rf .git
+            git init
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git checkout -b dev
+            git add .
+            git commit -m "Initial commit from ${PROJECT_TEMPLATE} ${TEMPLATE_VERSION}"
+            git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/Maua-Dev/${PROJECT_NAME}.git"
+            git push -u origin dev
+            cd ..
+            rm -rf template_src
+
+            gh repo edit "Maua-Dev/$PROJECT_NAME" --default-branch dev
+          else
+            gh repo create "Maua-Dev/$PROJECT_NAME" --$PRIVACY_TYPE -d "$DESCRIPTION" --template "Maua-Dev/$PROJECT_TEMPLATE"
+          fi
+          gh repo edit "Maua-Dev/$PROJECT_NAME" --enable-issues --delete-branch-on-merge
 
           if [ "${{needs.process_issue.outputs.team}}" != "None" ]; then
-            gh api -X PUT /orgs/Maua-Dev/teams/${{needs.process_issue.outputs.team}}/repos/Maua-Dev/${{needs.process_issue.outputs.project_name}} --raw-field "permission=push"
+            gh api -X PUT /orgs/Maua-Dev/teams/${{needs.process_issue.outputs.team}}/repos/Maua-Dev/$PROJECT_NAME --raw-field "permission=push"
           fi
           
-          gh api -X PUT /orgs/Maua-Dev/teams/Admins-repo/repos/Maua-Dev/${{needs.process_issue.outputs.project_name}} --raw-field "permission=admin"
-          gh api -X PUT /orgs/Maua-Dev/teams/Heads/repos/Maua-Dev/${{needs.process_issue.outputs.project_name}} --raw-field "permission=admin"
+          gh api -X PUT /orgs/Maua-Dev/teams/Admins-repo/repos/Maua-Dev/$PROJECT_NAME --raw-field "permission=admin"
+          gh api -X PUT /orgs/Maua-Dev/teams/Heads/repos/Maua-Dev/$PROJECT_NAME --raw-field "permission=admin"
           
           USERNAME=${{ github.event.issue.user.login }}
 
@@ -151,7 +229,7 @@ jobs:
             --method PUT \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/Maua-Dev/${{needs.process_issue.outputs.project_name}}/collaborators/$USERNAME\
+            /repos/Maua-Dev/$PROJECT_NAME/collaborators/$USERNAME\
             -f permission='admin' 
 
 

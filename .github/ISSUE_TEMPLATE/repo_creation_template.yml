@@ -37,9 +37,11 @@ body:
     id: project_template
     attributes:
       label: project_template
-      description: What template will be used?
+      description: What template will be used? For clean_mss, each option always uses the latest release of that line (v1.x / v2.0.x RPC / v2.1.x REST).
       options:
-        - clean_mss_template (PYTHON)
+        - clean_mss_template_original (PYTHON)
+        - clean_mss_port_rpc_http (PYTHON)
+        - clean_mss_port_rest (PYTHON)
         - battlesnake_fastapi_template (PYTHON)
         - simple_fastapi_template (PYTHON)
         - clean_mss_typescript_template (TYPESCRIPT)
