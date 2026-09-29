@@ -55,6 +55,7 @@ body:
         - challenge_template (PYTHON)
         - battlesnake_java_template (JAVA)
         - battlesnake_rust_template (RUST)
+        - battlesnake_javascript_template (JAVASCRIPT)
     validations:
       required: false
   - type: dropdown
