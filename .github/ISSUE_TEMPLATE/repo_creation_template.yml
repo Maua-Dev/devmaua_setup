@@ -54,8 +54,6 @@ body:
         - hexagonal_arch_react_template (REACT)
         - challenge_template (PYTHON)
         - battlesnake_java_template (JAVA)
-        - battlesnake_rust_template (RUST)
-        - battlesnake_nodejs_template (TYPESCRIPT)
     validations:
       required: false
   - type: dropdown
