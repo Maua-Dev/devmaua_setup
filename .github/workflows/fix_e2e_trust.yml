@@ -1,0 +1,44 @@
+name: Fix E2E Trust Broad
+on: workflow_dispatch
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID_DEV }}:role/GithubActionsRole
+          role-session-name: fix-trust
+      - name: Set broad then scoped trust
+        env:
+          ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID_DEV }}
+        run: |
+          ROLE=gha-battlesnake-battlesnake_e2e_oidc_test_2026
+          # First: identical to GithubActionsRole (sanity)
+          cat > /tmp/trust.json <<JSON
+          {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Principal": {"Federated": "arn:aws:iam::${ACCOUNT}:oidc-provider/token.actions.githubusercontent.com"},
+              "Action": "sts:AssumeRoleWithWebIdentity",
+              "Condition": {
+                "StringLike": {
+                  "token.actions.githubusercontent.com:sub": [
+                    "repo:Maua-Dev/*",
+                    "repo:Maua-Dev@73619687/*"
+                  ]
+                },
+                "ForAllValues:StringEquals": {
+                  "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+                  "token.actions.githubusercontent.com:iss": "https://token.actions.githubusercontent.com"
+                }
+              }
+            }]
+          }
+          JSON
+          aws iam update-assume-role-policy --role-name "$ROLE" --policy-document file:///tmp/trust.json
+          aws iam get-role --role-name "$ROLE" --query 'Role.AssumeRolePolicyDocument' --output json
