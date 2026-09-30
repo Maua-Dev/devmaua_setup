@@ -70,13 +70,24 @@ echo "ROLE_ARN=${ROLE_ARN}"
 
 echo "==> Setting GitHub Actions secrets on ${ORG}/${REPO_NAME}"
 # gh secret set needs repo write; GITHUB_TOKEN already in env from App token
-gh secret set AWS_DEPLOY_ROLE_ARN --repo "${ORG}/${REPO_NAME}" --body "${ROLE_ARN}"
-gh secret set AWS_ACCOUNT_ID_DEV --repo "${ORG}/${REPO_NAME}" --body "${AWS_ACCOUNT_ID}"
+set_secret() {
+  local name="$1"
+  local body="$2"
+  local tries=0
+  until gh secret set "$name" --repo "${ORG}/${REPO_NAME}" --body "${body}"; do
+    tries=$((tries + 1))
+    if [[ $tries -ge 3 ]]; then
+      echo "WARN: failed to set repo secret ${name} after retries (role still provisioned)"
+      return 0
+    fi
+    sleep 2
+  done
+  if gh api "repos/${ORG}/${REPO_NAME}/environments/dev" >/dev/null 2>&1; then
+    gh secret set "$name" --repo "${ORG}/${REPO_NAME}" --env dev --body "${body}" || true
+  fi
+}
 
-# Also set on the dev environment when it exists
-if gh api "repos/${ORG}/${REPO_NAME}/environments/dev" >/dev/null 2>&1; then
-  gh secret set AWS_DEPLOY_ROLE_ARN --repo "${ORG}/${REPO_NAME}" --env dev --body "${ROLE_ARN}" || true
-  gh secret set AWS_ACCOUNT_ID_DEV --repo "${ORG}/${REPO_NAME}" --env dev --body "${AWS_ACCOUNT_ID}" || true
-fi
+set_secret AWS_DEPLOY_ROLE_ARN "${ROLE_ARN}"
+set_secret AWS_ACCOUNT_ID_DEV "${AWS_ACCOUNT_ID}"
 
 echo "Provisioned ${ROLE_ARN} for ${ORG}/${REPO_NAME}"
