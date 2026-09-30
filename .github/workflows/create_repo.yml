@@ -204,8 +204,46 @@ jobs:
           PRIVACY_TYPE="${{needs.process_issue.outputs.privacy_type}}"
           PROJECT_TEMPLATE="${{needs.process_issue.outputs.project_template}}"
           TEMPLATE_VERSION="${{needs.process_issue.outputs.template_version}}"
+          IS_BATTLESNAKE="${{needs.process_issue.outputs.is_battlesnake}}"
 
-          if [ "$PROJECT_TEMPLATE" == "None" ] || [ -z "$PROJECT_TEMPLATE" ]; then
+          push_template_contents() {
+            local template="$1"
+            local commit_msg="$2"
+            local branch_arg="${3:-}"
+
+            if [ -n "$branch_arg" ]; then
+              git clone --depth 1 --branch "$branch_arg" \
+                "https://x-access-token:${GITHUB_TOKEN}@github.com/Maua-Dev/${template}.git" template_src
+            else
+              git clone --depth 1 \
+                "https://x-access-token:${GITHUB_TOKEN}@github.com/Maua-Dev/${template}.git" template_src
+            fi
+
+            cd template_src
+            rm -rf .git
+            git init
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git checkout -b dev
+            git add .
+            git commit -m "$commit_msg"
+            git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/Maua-Dev/${PROJECT_NAME}.git"
+            git push -u origin dev
+            cd ..
+            rm -rf template_src
+
+            gh repo edit "Maua-Dev/$PROJECT_NAME" --default-branch dev
+          }
+
+          if [ "$IS_BATTLESNAKE" = "true" ]; then
+            # Avoid gh --template: it commits workflows immediately and Instant CD
+            # races before AWS_DEPLOY_ROLE_ARN is provisioned. Create empty, disable
+            # Actions, push contents, provision secrets later, then re-enable.
+            gh repo create "Maua-Dev/$PROJECT_NAME" --$PRIVACY_TYPE -d "$DESCRIPTION"
+            gh api -X PUT "repos/Maua-Dev/$PROJECT_NAME/actions/permissions" \
+              -f enabled=false -f allowed_actions=all || true
+            push_template_contents "$PROJECT_TEMPLATE" "Initial commit from ${PROJECT_TEMPLATE}"
+          elif [ "$PROJECT_TEMPLATE" == "None" ] || [ -z "$PROJECT_TEMPLATE" ]; then
             gh repo create "Maua-Dev/$PROJECT_NAME" --$PRIVACY_TYPE -d "$DESCRIPTION" --add-readme
           elif [ -n "$TEMPLATE_VERSION" ]; then
             # GitHub template API always uses the default branch; create from a specific tag instead.
@@ -239,24 +277,9 @@ jobs:
             echo "Resolved template version/tag: $TEMPLATE_VERSION"
 
             gh repo create "Maua-Dev/$PROJECT_NAME" --$PRIVACY_TYPE -d "$DESCRIPTION"
-
-            git clone --depth 1 --branch "$TEMPLATE_VERSION" \
-              "https://x-access-token:${GITHUB_TOKEN}@github.com/Maua-Dev/${PROJECT_TEMPLATE}.git" template_src
-
-            cd template_src
-            rm -rf .git
-            git init
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git checkout -b dev
-            git add .
-            git commit -m "Initial commit from ${PROJECT_TEMPLATE} ${TEMPLATE_VERSION}"
-            git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/Maua-Dev/${PROJECT_NAME}.git"
-            git push -u origin dev
-            cd ..
-            rm -rf template_src
-
-            gh repo edit "Maua-Dev/$PROJECT_NAME" --default-branch dev
+            push_template_contents "$PROJECT_TEMPLATE" \
+              "Initial commit from ${PROJECT_TEMPLATE} ${TEMPLATE_VERSION}" \
+              "$TEMPLATE_VERSION"
           else
             gh repo create "Maua-Dev/$PROJECT_NAME" --$PRIVACY_TYPE -d "$DESCRIPTION" --template "Maua-Dev/$PROJECT_TEMPLATE"
           fi
@@ -278,13 +301,15 @@ jobs:
             /repos/Maua-Dev/$PROJECT_NAME/collaborators/$USERNAME\
             -f permission='admin'
 
-          # Outsiders need an explicit public repo + Actions enabled so they can
-          # view workflow logs while signed in (GitHub hides Actions logs from
-          # anonymous viewers even on public repos).
+          # Outsiders need an explicit public repo so they can view Actions logs
+          # while signed in. For Battlesnake, keep Actions disabled until after
+          # OIDC secrets are provisioned (see Enable Actions after secrets step).
           if [ "${{ needs.process_issue.outputs.is_org_member }}" != "true" ]; then
             gh repo edit "Maua-Dev/$PROJECT_NAME" --visibility public --accept-visibility-change-consequences || true
-            gh api -X PUT "repos/Maua-Dev/$PROJECT_NAME/actions/permissions" \
-              -f enabled=true -f allowed_actions=all || true
+            if [ "$IS_BATTLESNAKE" != "true" ]; then
+              gh api -X PUT "repos/Maua-Dev/$PROJECT_NAME/actions/permissions" \
+                -f enabled=true -f allowed_actions=all || true
+            fi
             gh issue comment ${{ github.event.issue.number }} -b "Hi @$USERNAME — accept the collaborator invite for \`Maua-Dev/$PROJECT_NAME\` (Admin). Stay signed in as @$USERNAME to view Actions logs (GitHub hides them from anonymous viewers even on public repos)." || true
           fi
 
@@ -510,13 +535,36 @@ jobs:
           chmod +x setup_src/scripts/provision_repo_role.sh
           setup_src/scripts/provision_repo_role.sh
 
+      # Secrets must exist before Instant CD can assume AWS_DEPLOY_ROLE_ARN.
+      - name: Enable Actions and trigger CD (Battlesnake)
+        if: needs.process_issue.outputs.is_battlesnake == 'true'
+        env:
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+          PROJECT_NAME: ${{ needs.process_issue.outputs.project_name }}
+        run: |
+          gh api -X PUT "repos/Maua-Dev/${PROJECT_NAME}/actions/permissions" \
+            -f enabled=true -f allowed_actions=all || true
+
+          # Empty commit on dev kicks Instant CD now that secrets exist.
+          tmp=$(mktemp -d)
+          git clone --depth 1 \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/Maua-Dev/${PROJECT_NAME}.git" "$tmp/repo"
+          cd "$tmp/repo"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout dev
+          git commit --allow-empty -m "chore: trigger CD after OIDC secrets provisioned"
+          git push origin dev
+          cd -
+          rm -rf "$tmp"
+
       - name: End message
         run: |
           echo "Finished creating repo"
 
           message="Thanks for using the Issue to repo creation! :smile: Now you can find your repo at [${{needs.process_issue.outputs.project_name}}](https://github.com/Maua-Dev/${{needs.process_issue.outputs.project_name}}) :rocket:"
           if [ "${{ needs.process_issue.outputs.is_battlesnake }}" = "true" ]; then
-            message="${message}"$'\n\n'"Battlesnake deploy uses a scoped temporary OIDC role (gha-battlesnake-${{needs.process_issue.outputs.project_name}}) that expires on 2026-10-12. Secret AWS_DEPLOY_ROLE_ARN was set on the repo."
+            message="${message}"$'\n\n'"Battlesnake deploy uses a scoped temporary OIDC role (gha-battlesnake-${{needs.process_issue.outputs.project_name}}) that expires on 2026-10-12. Secret AWS_DEPLOY_ROLE_ARN was set on the repo before Instant CD was enabled."
           fi
 
           {
