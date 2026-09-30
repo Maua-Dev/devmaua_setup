@@ -1,0 +1,46 @@
+name: Reprovision Battlesnake Role
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo_name:
+        description: Repository name under Maua-Dev
+        required: true
+      family:
+        description: cdk or tf
+        required: true
+        default: cdk
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  reprovision:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get Token
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v2
+        with:
+          application_id: ${{ secrets.SETUP_APP_ID }}
+          application_private_key: ${{ secrets.SETUP_APP_PRIVATE_KEY }}
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID_DEV }}:role/BattlesnakeRoleProvisioner
+          role-session-name: battlesnake-reprovision
+
+      - name: Provision role
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID_DEV }}
+          REPO_NAME: ${{ inputs.repo_name }}
+          FAMILY: ${{ inputs.family }}
+          GITHUB_TOKEN: ${{ steps.get_workflow_token.outputs.token }}
+        run: |
+          chmod +x scripts/provision_repo_role.sh
+          ./scripts/provision_repo_role.sh

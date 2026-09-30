@@ -9,11 +9,15 @@
       },
       "Action": "sts:AssumeRoleWithWebIdentity",
       "Condition": {
-        "StringEquals": {
-          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-        },
         "StringLike": {
-          "token.actions.githubusercontent.com:sub": "repo:Maua-Dev/${REPO_NAME}:*"
+          "token.actions.githubusercontent.com:sub": [
+            "repo:Maua-Dev/${REPO_NAME}:*",
+            "repo:Maua-Dev@73619687/${REPO_NAME}:*"
+          ]
+        },
+        "ForAllValues:StringEquals": {
+          "token.actions.githubusercontent.com:iss": "https://token.actions.githubusercontent.com",
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "DateLessThan": {
           "aws:CurrentTime": "2026-10-12T23:59:59Z"
