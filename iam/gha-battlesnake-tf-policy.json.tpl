@@ -6,8 +6,8 @@
       "Effect": "Allow",
       "Action": ["lambda:*"],
       "Resource": [
-        "arn:aws:lambda:*:${AWS_ACCOUNT_ID}:function:battlesnake-${REPO_NAME}-*",
-        "arn:aws:lambda:*:${AWS_ACCOUNT_ID}:function:battlesnake-${REPO_NAME}-*:*"
+        "arn:aws:lambda:*:${AWS_ACCOUNT_ID}:function:battlesnake-${REPO_SLUG}-*",
+        "arn:aws:lambda:*:${AWS_ACCOUNT_ID}:function:battlesnake-${REPO_SLUG}-*:*"
       ]
     },
     {
@@ -29,8 +29,8 @@
       "Effect": "Allow",
       "Action": ["logs:*"],
       "Resource": [
-        "arn:aws:logs:*:${AWS_ACCOUNT_ID}:log-group:/aws/lambda/battlesnake-${REPO_NAME}-*",
-        "arn:aws:logs:*:${AWS_ACCOUNT_ID}:log-group:/aws/lambda/battlesnake-${REPO_NAME}-*:*"
+        "arn:aws:logs:*:${AWS_ACCOUNT_ID}:log-group:/aws/lambda/battlesnake-${REPO_SLUG}-*",
+        "arn:aws:logs:*:${AWS_ACCOUNT_ID}:log-group:/aws/lambda/battlesnake-${REPO_SLUG}-*:*"
       ]
     },
     {
@@ -63,8 +63,8 @@
         "iam:ListInstanceProfilesForRole"
       ],
       "Resource": [
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_NAME}-*",
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_NAME}-*"
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_SLUG}-*",
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_SLUG}-*"
       ]
     },
     {
@@ -72,8 +72,8 @@
       "Effect": "Allow",
       "Action": ["iam:CreateRole"],
       "Resource": [
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_NAME}-*",
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_NAME}-*"
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_SLUG}-*",
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_SLUG}-*"
       ],
       "Condition": {
         "StringEquals": {
@@ -86,8 +86,8 @@
       "Effect": "Allow",
       "Action": ["iam:PassRole"],
       "Resource": [
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_NAME}-*",
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_NAME}-*"
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_SLUG}-*",
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_SLUG}-*"
       ],
       "Condition": {
         "StringEquals": {
@@ -115,7 +115,7 @@
       "Condition": {
         "StringLike": {
           "s3:prefix": [
-            "app/${REPO_NAME}/*",
+            "app/${REPO_SLUG}/*",
             "bootstrap*",
             "bootstrap/*",
             "bootstrap-javascript/*",
@@ -134,7 +134,7 @@
         "s3:GetObjectVersion"
       ],
       "Resource": [
-        "arn:aws:s3:::battlesnake-*-template-terraform-state*/app/${REPO_NAME}/*"
+        "arn:aws:s3:::battlesnake-*-template-terraform-state*/app/${REPO_SLUG}/*"
       ]
     },
     {

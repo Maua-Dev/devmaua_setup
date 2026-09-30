@@ -21,7 +21,7 @@
         "cloudformation:ListStackResources"
       ],
       "Resource": [
-        "arn:aws:cloudformation:*:${AWS_ACCOUNT_ID}:stack/battlesnake-${REPO_NAME}-*/*",
+        "arn:aws:cloudformation:*:${AWS_ACCOUNT_ID}:stack/battlesnake-${REPO_SLUG}-*/*",
         "arn:aws:cloudformation:*:${AWS_ACCOUNT_ID}:stack/CDKToolkit/*"
       ]
     },
@@ -39,10 +39,10 @@
       "Effect": "Allow",
       "Action": ["lambda:*"],
       "Resource": [
-        "arn:aws:lambda:*:${AWS_ACCOUNT_ID}:function:battlesnake-${REPO_NAME}-*",
-        "arn:aws:lambda:*:${AWS_ACCOUNT_ID}:function:battlesnake-${REPO_NAME}-*:*",
-        "arn:aws:lambda:*:${AWS_ACCOUNT_ID}:layer:battlesnake-${REPO_NAME}-*",
-        "arn:aws:lambda:*:${AWS_ACCOUNT_ID}:layer:battlesnake-${REPO_NAME}-*:*"
+        "arn:aws:lambda:*:${AWS_ACCOUNT_ID}:function:battlesnake-${REPO_SLUG}-*",
+        "arn:aws:lambda:*:${AWS_ACCOUNT_ID}:function:battlesnake-${REPO_SLUG}-*:*",
+        "arn:aws:lambda:*:${AWS_ACCOUNT_ID}:layer:battlesnake-${REPO_SLUG}-*",
+        "arn:aws:lambda:*:${AWS_ACCOUNT_ID}:layer:battlesnake-${REPO_SLUG}-*:*"
       ]
     },
     {
@@ -65,8 +65,8 @@
       "Effect": "Allow",
       "Action": ["logs:*"],
       "Resource": [
-        "arn:aws:logs:*:${AWS_ACCOUNT_ID}:log-group:/aws/lambda/battlesnake-${REPO_NAME}-*",
-        "arn:aws:logs:*:${AWS_ACCOUNT_ID}:log-group:/aws/lambda/battlesnake-${REPO_NAME}-*:*"
+        "arn:aws:logs:*:${AWS_ACCOUNT_ID}:log-group:/aws/lambda/battlesnake-${REPO_SLUG}-*",
+        "arn:aws:logs:*:${AWS_ACCOUNT_ID}:log-group:/aws/lambda/battlesnake-${REPO_SLUG}-*:*"
       ]
     },
     {
@@ -85,7 +85,7 @@
         "cloudwatch:ListTagsForResource"
       ],
       "Resource": [
-        "arn:aws:cloudwatch:*:${AWS_ACCOUNT_ID}:alarm:battlesnake-${REPO_NAME}-*"
+        "arn:aws:cloudwatch:*:${AWS_ACCOUNT_ID}:alarm:battlesnake-${REPO_SLUG}-*"
       ]
     },
     {
@@ -120,8 +120,8 @@
         "iam:ListInstanceProfilesForRole"
       ],
       "Resource": [
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_NAME}-*",
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_NAME}-*"
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_SLUG}-*",
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_SLUG}-*"
       ]
     },
     {
@@ -129,8 +129,8 @@
       "Effect": "Allow",
       "Action": ["iam:CreateRole"],
       "Resource": [
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_NAME}-*",
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_NAME}-*"
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_SLUG}-*",
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_SLUG}-*"
       ],
       "Condition": {
         "StringEquals": {
@@ -143,8 +143,8 @@
       "Effect": "Allow",
       "Action": ["iam:PassRole"],
       "Resource": [
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_NAME}-*",
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_NAME}-*"
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_SLUG}-*",
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_SLUG}-*"
       ],
       "Condition": {
         "StringEquals": {

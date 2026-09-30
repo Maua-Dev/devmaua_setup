@@ -10,6 +10,7 @@ GITHUB_TOKEN="${GITHUB_TOKEN:?GITHUB_TOKEN is required}"
 ORG="${ORG:-Maua-Dev}"
 EXPIRY="${EXPIRY:-2026-10-12T23:59:59Z}"
 
+REPO_SLUG="${REPO_NAME//_/-}"
 ROLE_NAME="gha-battlesnake-${REPO_NAME}"
 # IAM role names max 64 chars
 if [[ ${#ROLE_NAME} -gt 64 ]]; then
@@ -34,6 +35,7 @@ render() {
   local dest="$2"
   sed -e "s/\${AWS_ACCOUNT_ID}/${AWS_ACCOUNT_ID}/g" \
       -e "s/\${REPO_NAME}/${REPO_NAME}/g" \
+      -e "s/\${REPO_SLUG}/${REPO_SLUG}/g" \
       "$src" > "$dest"
 }
 
