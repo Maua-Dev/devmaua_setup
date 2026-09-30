@@ -278,6 +278,21 @@ jobs:
             /repos/Maua-Dev/$PROJECT_NAME/collaborators/$USERNAME\
             -f permission='admin'
 
+          # Outsiders need an explicit public repo + Actions enabled so they can
+          # view workflow logs while signed in (GitHub hides Actions logs from
+          # anonymous viewers even on public repos).
+          if [ "${{ needs.process_issue.outputs.is_org_member }}" != "true" ]; then
+            gh repo edit "Maua-Dev/$PROJECT_NAME" --visibility public --accept-visibility-change-consequences || true
+            gh api -X PUT "repos/Maua-Dev/$PROJECT_NAME/actions/permissions" \
+              -f enabled=true -f allowed_actions=all || true
+            gh issue comment ${{ github.event.issue.number }} -b "$(cat <<EOF
+Hi @$USERNAME — accept the collaborator invite email/notification for \`Maua-Dev/$PROJECT_NAME\` (Admin).
+
+GitHub requires you to be **signed in** as @$USERNAME to view Actions logs (even on public repos). Open the repo while logged in to see workflow output.
+EOF
+)" || true
+          fi
+
 
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -289,7 +304,7 @@ jobs:
         run: sleep 10s
 
       - name: Add Branch Protection Dev
-        if: ${{startsWith(needs.process_issue.outputs.privacy_type, 'public')}}
+        if: ${{ startsWith(needs.process_issue.outputs.privacy_type, 'public') && needs.process_issue.outputs.is_org_member == 'true' }}
         run: |
 
           curl -vv -L \
@@ -343,7 +358,7 @@ jobs:
 
 
       - name: Add Branch Protection Homolog
-        if: startsWith(needs.process_issue.outputs.privacy_type, 'public')
+        if: ${{ startsWith(needs.process_issue.outputs.privacy_type, 'public') && needs.process_issue.outputs.is_org_member == 'true' }}
         run: |
           echo "Adding Branch Protection Homolog"
 
@@ -398,7 +413,7 @@ jobs:
 
 
       - name: Add Branch Protection Production
-        if: startsWith(needs.process_issue.outputs.privacy_type, 'public')
+        if: ${{ startsWith(needs.process_issue.outputs.privacy_type, 'public') && needs.process_issue.outputs.is_org_member == 'true' }}
         run: |
           echo "Adding Branch Protection Production"
 

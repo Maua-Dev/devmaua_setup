@@ -116,6 +116,7 @@
         "StringLike": {
           "s3:prefix": [
             "app/${REPO_SLUG}/*",
+            "app/${REPO_NAME}/*",
             "bootstrap*",
             "bootstrap/*",
             "bootstrap-javascript/*",
@@ -134,7 +135,8 @@
         "s3:GetObjectVersion"
       ],
       "Resource": [
-        "arn:aws:s3:::battlesnake-*-template-terraform-state*/app/${REPO_SLUG}/*"
+        "arn:aws:s3:::battlesnake-*-template-terraform-state*/app/${REPO_SLUG}/*",
+        "arn:aws:s3:::battlesnake-*-template-terraform-state*/app/${REPO_NAME}/*"
       ]
     },
     {
