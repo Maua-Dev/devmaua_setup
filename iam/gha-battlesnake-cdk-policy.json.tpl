@@ -61,6 +61,16 @@
       "Resource": "*"
     },
     {
+      "Sid": "LogsDescribeAccount",
+      "Effect": "Allow",
+      "Action": [
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams",
+        "logs:DescribeMetricFilters"
+      ],
+      "Resource": "*"
+    },
+    {
       "Sid": "LogsScoped",
       "Effect": "Allow",
       "Action": ["logs:*"],
