@@ -1,0 +1,27 @@
+name: Debug IAM Trust
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID_DEV }}:role/GithubActionsRole
+          role-session-name: debug-trust
+
+      - name: Dump trust policies
+        run: |
+          echo "=== GithubActionsRole ==="
+          aws iam get-role --role-name GithubActionsRole --query 'Role.AssumeRolePolicyDocument' --output json
+          echo "=== gha-battlesnake-battlesnake_e2e_oidc_test_2026 ==="
+          aws iam get-role --role-name gha-battlesnake-battlesnake_e2e_oidc_test_2026 --query 'Role.AssumeRolePolicyDocument' --output json
+          echo "=== OIDC providers ==="
+          aws iam list-open-id-connect-providers --output json
