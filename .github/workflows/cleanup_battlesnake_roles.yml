@@ -1,0 +1,29 @@
+name: Cleanup Battlesnake Roles
+
+on:
+  schedule:
+    # Daily after the championship window
+    - cron: '0 12 * * *'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID_DEV }}:role/BattlesnakeRoleProvisioner
+          role-session-name: battlesnake-role-cleanup
+
+      - name: Cleanup expired roles
+        run: |
+          chmod +x scripts/cleanup_expired_roles.sh
+          ./scripts/cleanup_expired_roles.sh

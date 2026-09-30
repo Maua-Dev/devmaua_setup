@@ -1,0 +1,29 @@
+name: Bootstrap Battlesnake IAM
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (admin bootstrap)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID_DEV }}:role/GithubActionsRole
+          role-session-name: battlesnake-iam-bootstrap
+
+      - name: Bootstrap IAM foundation
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID_DEV }}
+          AWS_REGION: us-east-1
+        run: |
+          chmod +x scripts/bootstrap_iam.sh
+          ./scripts/bootstrap_iam.sh

@@ -7,12 +7,14 @@ body:
     attributes:
       value: |
         To create a new repository, please fill out the following information. Please note that the project name must be unique and the description must be clear and concise. Do not change the issue title starting with [NEW_REPO].
+
+        **Outsiders (non Maua-Dev members):** you may only select a **Battlesnake** template. The deploy role expires on **2026-10-12**.
   - type: input
     id: project_name
     attributes:
       label: project_name
       description: What is the name of the project?
-      placeholder: ex. devmaua_setup
+      placeholder: ex. battlesnake_gabriel_silva
     validations:
       required: true
   - type: textarea
@@ -27,7 +29,7 @@ body:
     id: privacy_type
     attributes:
       label: privacy_type
-      description: What is the privacy type of the project?
+      description: What is the privacy type of the project? (Outsiders are forced to public.)
       options:
         - public
         - private
@@ -37,12 +39,16 @@ body:
     id: project_template
     attributes:
       label: project_template
-      description: What template will be used? For clean_mss, each option always uses the latest release of that line (v1.x / v2.0.x RPC / v2.1.x REST).
+      description: What template will be used? For clean_mss, each option always uses the latest release of that line (v1.x / v2.0.x RPC / v2.1.x REST). Battlesnake templates are open to outsiders.
       options:
+        - battlesnake_fastapi_template (PYTHON)
+        - battlesnake_nodejs_template (TYPESCRIPT)
+        - battlesnake_java_template (JAVA)
+        - battlesnake_javascript_template (JAVASCRIPT)
+        - battlesnake_rust_template (RUST)
         - clean_mss_template_original (PYTHON)
         - clean_mss_port_rpc_http (PYTHON)
         - clean_mss_port_rest (PYTHON)
-        - battlesnake_fastapi_template (PYTHON)
         - simple_fastapi_template (PYTHON)
         - clean_mss_typescript_template (TYPESCRIPT)
         - clean_flutter_template (FLUTTER)
@@ -50,19 +56,15 @@ body:
         - simple_react_template (REACT)
         - vite_react_template (REACT)
         - dev_in_the_dark_template (HTML/CSS)
-        - battlesnake_nodejs_template (TYPESCRIPT)
         - hexagonal_arch_react_template (REACT)
         - challenge_template (PYTHON)
-        - battlesnake_java_template (JAVA)
-        - battlesnake_javascript_template (JAVASCRIPT)
-        - battlesnake_rust_template (RUST)
     validations:
       required: false
   - type: dropdown
     id: team
     attributes:
       label: team
-      description: What team will be added to the project?
+      description: What team will be added to the project? (Ignored for outsiders.)
       options:
         - Back-end
         - Front-end

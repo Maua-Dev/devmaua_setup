@@ -1,0 +1,104 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowBattlesnakePrefixedResources",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:*",
+        "logs:*",
+        "cloudwatch:*",
+        "cloudformation:*",
+        "apigateway:*",
+        "s3:*",
+        "dynamodb:*",
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllowSharedBattlesnakeSns",
+      "Effect": "Allow",
+      "Action": [
+        "sns:Publish",
+        "sns:Subscribe",
+        "sns:GetTopicAttributes",
+        "sns:ListTopics"
+      ],
+      "Resource": [
+        "arn:aws:sns:*:*:sns-battlesnake",
+        "arn:aws:sns:*:*:sns-battlesnake:*"
+      ]
+    },
+    {
+      "Sid": "AllowPassAndManagePrefixedRoles",
+      "Effect": "Allow",
+      "Action": [
+        "iam:PassRole",
+        "iam:GetRole",
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:UpdateAssumeRolePolicy"
+      ],
+      "Resource": [
+        "arn:aws:iam::*:role/battlesnake-*",
+        "arn:aws:iam::*:role/cdk-hnb659fds-*"
+      ]
+    },
+    {
+      "Sid": "DenyEverythingElseViaBoundarySemantics",
+      "Effect": "Deny",
+      "NotAction": [
+        "lambda:*",
+        "logs:*",
+        "cloudwatch:*",
+        "cloudformation:*",
+        "apigateway:*",
+        "s3:*",
+        "dynamodb:*",
+        "sns:Publish",
+        "sns:Subscribe",
+        "sns:GetTopicAttributes",
+        "sns:ListTopics",
+        "ssm:GetParameter",
+        "ssm:GetParameters",
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "iam:PassRole",
+        "iam:GetRole",
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:ListRolePolicies",
+        "iam:ListAttachedRolePolicies",
+        "iam:UpdateAssumeRolePolicy",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion",
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

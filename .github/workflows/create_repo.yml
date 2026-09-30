@@ -18,32 +18,34 @@ jobs:
         run: |
           echo "GITHUB_TOKEN=${{ steps.get_workflow_token.outputs.token }}" >> $GITHUB_ENV
       - name: Checkout repository
-        uses: actions/checkout@v2
-      
+        uses: actions/checkout@v4
+
       - name: Print issue title and body
         run: |
           echo "Issue title: ${{ github.event.issue.title }}"
           echo "Issue body: ${{ github.event.issue.body }}"
-          
+
       - name: Check Organization Membership
+        id: membership
         run: |
           USERNAME=${{ github.event.issue.user.login }}
           ORG_NAME="Maua-Dev"
-          
-          # get info from gh api
-          response=$(gh api "/orgs/$ORG_NAME/members/$USERNAME" | jq -r '.message')
 
-          echo "Response: $response"
+          set +e
+          gh api "/orgs/$ORG_NAME/members/$USERNAME" >/tmp/member.json 2>/tmp/member.err
+          STATUS=$?
+          set -e
 
-          if [ "$response" != "" ]; then
-            echo "User is not a member of the organization"
-            gh issue comment ${{ github.event.issue.number }} -b "Hi @$USERNAME, you are not a member of the organization. Please join the organization before creating a new repo.  "
-            gh issue close ${{ github.event.issue.number }}  -c "User is not a member of the organization :warning:"
-            exit 1
-          else
+          if [ $STATUS -eq 0 ]; then
             echo "User is a member of the organization"
+            echo "is_org_member=true" >> $GITHUB_ENV
+            echo "is_org_member=true" >> $GITHUB_OUTPUT
+          else
+            echo "User is not a member of the organization (outsider path may apply)"
+            echo "is_org_member=false" >> $GITHUB_ENV
+            echo "is_org_member=false" >> $GITHUB_OUTPUT
           fi
-          
+
       - name: Check if issue title starts with [NEW_REPO]
         if: startsWith(github.event.issue.title, '[NEW_REPO]')
         run: |
@@ -62,7 +64,7 @@ jobs:
 
           privacy_type=$(grep -A 2 "### privacy_type" project_details.txt | tail -n 1)
           privacy_type=$(echo $privacy_type | tr -d '\r')
-          
+
           project_template=$(grep -A 2 "### project_template" project_details.txt | tail -n 1)
           project_template=$(echo $project_template | tr -d '\r')
           project_template=$(echo $project_template | cut -d' ' -f1)
@@ -86,13 +88,48 @@ jobs:
 
           team=$(grep -A 2 "### team" project_details.txt | tail -n 1)
           team=$(echo $team | tr -d '\r')
-          
+
+          BATTLE_SNAKE_TEMPLATES="battlesnake_fastapi_template battlesnake_nodejs_template battlesnake_java_template battlesnake_javascript_template battlesnake_rust_template"
+          is_battlesnake=false
+          for t in $BATTLE_SNAKE_TEMPLATES; do
+            if [ "$project_template" = "$t" ]; then
+              is_battlesnake=true
+              break
+            fi
+          done
+
+          USERNAME=${{ github.event.issue.user.login }}
+          if [ "${{ env.is_org_member }}" != "true" ]; then
+            if [ "$is_battlesnake" != "true" ]; then
+              gh issue comment ${{ github.event.issue.number }} -b "Hi @$USERNAME, outsiders can only create repositories from Battlesnake templates (fastapi / nodejs / java / javascript / rust). Please join Maua-Dev for other templates."
+              gh issue close ${{ github.event.issue.number }} -c "Outsider not allowed for template :warning:"
+              exit 1
+            fi
+            # Force public repos for outsiders; skip org team assignment
+            privacy_type="public"
+            team="None"
+            echo "Outsider Battlesnake path: forcing public and skipping team"
+          fi
+
+          battlesnake_family=""
+          case "$project_template" in
+            battlesnake_fastapi_template|battlesnake_nodejs_template)
+              battlesnake_family="cdk"
+              ;;
+            battlesnake_java_template|battlesnake_javascript_template|battlesnake_rust_template)
+              battlesnake_family="tf"
+              ;;
+          esac
+
           echo "Project Name: $project_name"
           echo "Description: $description"
           echo "Privacy Type: $privacy_type"
           echo "Project Template: $project_template"
           echo "Template Version: $template_version"
           echo "Team: $team"
+          echo "Is Battlesnake: $is_battlesnake"
+          echo "Battlesnake Family: $battlesnake_family"
+          echo "Is Org Member: ${{ env.is_org_member }}"
 
           echo "project_name=$project_name" >> $GITHUB_ENV
           echo "description=$description" >> $GITHUB_ENV
@@ -100,7 +137,9 @@ jobs:
           echo "project_template=$project_template" >> $GITHUB_ENV
           echo "template_version=$template_version" >> $GITHUB_ENV
           echo "team=$team" >> $GITHUB_ENV
-      
+          echo "is_battlesnake=$is_battlesnake" >> $GITHUB_ENV
+          echo "battlesnake_family=$battlesnake_family" >> $GITHUB_ENV
+
     outputs:
       project_name: ${{ env.project_name }}
       description: ${{ env.description }}
@@ -108,11 +147,18 @@ jobs:
       project_template: ${{ env.project_template }}
       template_version: ${{ env.template_version }}
       team: ${{ env.team }}
+      is_org_member: ${{ env.is_org_member }}
+      is_battlesnake: ${{ env.is_battlesnake }}
+      battlesnake_family: ${{ env.battlesnake_family }}
 
   create_repo:
     needs: process_issue
     runs-on: ubuntu-latest
     if: startsWith(github.event.issue.title, '[NEW_REPO]')
+    permissions:
+      id-token: write
+      contents: read
+      issues: write
     env:
       repo_name: ${{needs.process_issue.outputs.project_name}}
     steps:
@@ -128,7 +174,7 @@ jobs:
           echo "GITHUB_TOKEN=${{ steps.get_workflow_token.outputs.token }}" >> $GITHUB_ENV
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Verify repo
         run: |
@@ -216,13 +262,13 @@ jobs:
           fi
           gh repo edit "Maua-Dev/$PROJECT_NAME" --enable-issues --delete-branch-on-merge
 
-          if [ "${{needs.process_issue.outputs.team}}" != "None" ]; then
+          if [ "${{needs.process_issue.outputs.team}}" != "None" ] && [ -n "${{needs.process_issue.outputs.team}}" ]; then
             gh api -X PUT /orgs/Maua-Dev/teams/${{needs.process_issue.outputs.team}}/repos/Maua-Dev/$PROJECT_NAME --raw-field "permission=push"
           fi
-          
+
           gh api -X PUT /orgs/Maua-Dev/teams/Admins-repo/repos/Maua-Dev/$PROJECT_NAME --raw-field "permission=admin"
           gh api -X PUT /orgs/Maua-Dev/teams/Heads/repos/Maua-Dev/$PROJECT_NAME --raw-field "permission=admin"
-          
+
           USERNAME=${{ github.event.issue.user.login }}
 
           gh api \
@@ -230,11 +276,11 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /repos/Maua-Dev/$PROJECT_NAME/collaborators/$USERNAME\
-            -f permission='admin' 
+            -f permission='admin'
 
 
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           token: ${{ env.GITHUB_TOKEN }}
           repository: "Maua-Dev/${{needs.process_issue.outputs.project_name}}"
@@ -245,7 +291,7 @@ jobs:
       - name: Add Branch Protection Dev
         if: ${{startsWith(needs.process_issue.outputs.privacy_type, 'public')}}
         run: |
-          
+
           curl -vv -L \
             -X PUT \
             -H "Accept: application/vnd.github.v3+json" \
@@ -274,10 +320,10 @@ jobs:
               "allow_fork_syncing": false
             }'
       - name: Create Homolog
-        env: 
+        env:
           GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         run: |
-          
+
           echo "Creating Homolog Branch"
 
           echo "Getting SHA from dev branch"
@@ -285,7 +331,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "/repos/Maua-Dev/$repo_name/git/ref/heads/dev" | jq -r '.object.sha')
-          
+
           echo "Creating Homolog Branch"
           gh api \
             --method POST \
@@ -329,10 +375,10 @@ jobs:
               "allow_fork_syncing": false
             }'
       - name: Create Production
-        env: 
+        env:
           GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         run: |
-          
+
           echo "Creating Production Branch"
 
           echo "Getting SHA from dev branch"
@@ -340,7 +386,7 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "/repos/Maua-Dev/$repo_name/git/ref/heads/dev" | jq -r '.object.sha')
-          
+
           echo "Creating Production Branch"
           gh api \
             --method POST \
@@ -355,7 +401,7 @@ jobs:
         if: startsWith(needs.process_issue.outputs.privacy_type, 'public')
         run: |
           echo "Adding Branch Protection Production"
-          
+
           curl -vv -L \
             -X PUT \
             -H "Accept: application/vnd.github.v3+json" \
@@ -386,7 +432,7 @@ jobs:
 
       - name: Create environments
         if: startsWith(needs.process_issue.outputs.privacy_type, 'public')
-        env: 
+        env:
           GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         run: |
           gh api --method PUT -H "Accept: application/vnd.github+json" \
@@ -394,13 +440,13 @@ jobs:
 
           gh api --method PUT -H "Accept: application/vnd.github+json" \
           repos/Maua-Dev/$repo_name/environments/homolog
-        
+
           gh api --method PUT -H "Accept: application/vnd.github+json" \
           repos/Maua-Dev/$repo_name/environments/prod
 
       - name: Getting team id
         if: startsWith(needs.process_issue.outputs.privacy_type, 'public')
-        env: 
+        env:
           GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
         run: |
           echo "Getting team id"
@@ -417,7 +463,7 @@ jobs:
         if: startsWith(needs.process_issue.outputs.privacy_type, 'public')
         run: |
 
-          
+
 
           echo "Assigning reviewer to $repo_name"
 
@@ -429,13 +475,47 @@ jobs:
             "https://api.github.com/repos/Maua-Dev/$repo_name/environments/prod" \
             -d '{"reviewers":[{"type":"Team","id":${{ env.team_id }}}]}'
 
+      - name: Checkout setup repo for IAM scripts
+        if: needs.process_issue.outputs.is_battlesnake == 'true'
+        uses: actions/checkout@v4
+        with:
+          path: setup_src
+
+      - name: Configure AWS Credentials (Battlesnake provisioner)
+        if: needs.process_issue.outputs.is_battlesnake == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID_DEV }}:role/BattlesnakeRoleProvisioner
+          role-session-name: battlesnake-provision-${{ needs.process_issue.outputs.project_name }}
+
+      - name: Provision scoped Battlesnake deploy role
+        if: needs.process_issue.outputs.is_battlesnake == 'true'
+        env:
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID_DEV }}
+          REPO_NAME: ${{ needs.process_issue.outputs.project_name }}
+          FAMILY: ${{ needs.process_issue.outputs.battlesnake_family }}
+          GITHUB_TOKEN: ${{ env.GITHUB_TOKEN }}
+        run: |
+          chmod +x setup_src/scripts/provision_repo_role.sh
+          setup_src/scripts/provision_repo_role.sh
+
       - name: End message
         run: |
           echo "Finished creating repo"
 
           message="Thanks for using the Issue to repo creation! :smile: Now you can find your repo at [${{needs.process_issue.outputs.project_name}}](https://github.com/Maua-Dev/${{needs.process_issue.outputs.project_name}}) :rocket:"
-          
-          echo "message=$message" >> $GITHUB_ENV
+          if [ "${{ needs.process_issue.outputs.is_battlesnake }}" = "true" ]; then
+            message="$message
+
+Battlesnake deploy uses a **scoped temporary OIDC role** (\`gha-battlesnake-${{needs.process_issue.outputs.project_name}}\`) that expires on **2026-10-12**. Secret \`AWS_DEPLOY_ROLE_ARN\` was set on the repo."
+          fi
+
+          {
+            echo "message<<EOF"
+            echo "$message"
+            echo "EOF"
+          } >> $GITHUB_ENV
 
     outputs:
       message: ${{ env.message }}
@@ -456,7 +536,7 @@ jobs:
           echo "GITHUB_TOKEN=${{ steps.get_workflow_token.outputs.token }}" >> $GITHUB_ENV
 
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Close Issue
         run: |
