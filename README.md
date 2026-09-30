@@ -21,6 +21,8 @@ Non-members of `Maua-Dev` may open a `[NEW_REPO]` issue **only** with a Battlesn
 
 For those repos the workflow provisions a **scoped temporary OIDC role** `gha-battlesnake-{repo}` (expires **2026-10-12**) and sets `AWS_DEPLOY_ROLE_ARN` on the new repository. Deploy permissions are limited to resources named `battlesnake-{repo}-*`.
 
+Full technical design (IAM, naming, race fixes, template families): see **[BATTLESNAKE.md](./BATTLESNAKE.md)**.
+
 ### IAM bootstrap (maintainers)
 
 One-time / idempotent setup of the permissions boundary + provisioner role:
