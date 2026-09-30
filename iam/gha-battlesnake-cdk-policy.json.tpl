@@ -139,18 +139,13 @@
       }
     },
     {
-      "Sid": "IamPassPrefixedRolesWithBoundary",
+      "Sid": "IamPassPrefixedRoles",
       "Effect": "Allow",
       "Action": ["iam:PassRole"],
       "Resource": [
         "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_SLUG}-*",
         "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_SLUG}-*"
-      ],
-      "Condition": {
-        "StringEquals": {
-          "iam:PermissionsBoundary": "arn:aws:iam::${AWS_ACCOUNT_ID}:policy/pb-battlesnake-participant"
-        }
-      }
+      ]
     },
     {
       "Sid": "IamPassBootstrapRoles",
