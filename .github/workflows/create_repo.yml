@@ -2,7 +2,7 @@ name: Issue Handler
 
 on:
   issues:
-    types: opened
+    types: [opened, reopened]
 
 jobs:
   process_issue:
@@ -285,12 +285,7 @@ jobs:
             gh repo edit "Maua-Dev/$PROJECT_NAME" --visibility public --accept-visibility-change-consequences || true
             gh api -X PUT "repos/Maua-Dev/$PROJECT_NAME/actions/permissions" \
               -f enabled=true -f allowed_actions=all || true
-            gh issue comment ${{ github.event.issue.number }} -b "$(cat <<EOF
-Hi @$USERNAME — accept the collaborator invite email/notification for \`Maua-Dev/$PROJECT_NAME\` (Admin).
-
-GitHub requires you to be **signed in** as @$USERNAME to view Actions logs (even on public repos). Open the repo while logged in to see workflow output.
-EOF
-)" || true
+            gh issue comment ${{ github.event.issue.number }} -b "Hi @$USERNAME — accept the collaborator invite for \`Maua-Dev/$PROJECT_NAME\` (Admin). Stay signed in as @$USERNAME to view Actions logs (GitHub hides them from anonymous viewers even on public repos)." || true
           fi
 
 
