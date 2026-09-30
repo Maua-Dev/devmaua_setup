@@ -15,8 +15,7 @@
             "repo:Maua-Dev@73619687/${REPO_NAME}:*"
           ]
         },
-        "ForAllValues:StringEquals": {
-          "token.actions.githubusercontent.com:iss": "https://token.actions.githubusercontent.com",
+        "StringEquals": {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
         },
         "DateLessThan": {
