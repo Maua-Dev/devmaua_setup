@@ -2,7 +2,6 @@
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "GitHubOidcBattlesnakeRepo",
       "Effect": "Allow",
       "Principal": {
         "Federated": "arn:aws:iam::${AWS_ACCOUNT_ID}:oidc-provider/token.actions.githubusercontent.com"
@@ -15,11 +14,9 @@
             "repo:Maua-Dev@73619687/${REPO_NAME}:*"
           ]
         },
-        "StringEquals": {
-          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com"
-        },
-        "DateLessThan": {
-          "aws:CurrentTime": "2026-10-12T23:59:59Z"
+        "ForAllValues:StringEquals": {
+          "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
+          "token.actions.githubusercontent.com:iss": "https://token.actions.githubusercontent.com"
         }
       }
     }
