@@ -5,6 +5,11 @@ on:
     # Daily after the championship window
     - cron: '0 12 * * *'
   workflow_dispatch:
+    inputs:
+      force_roles:
+        description: 'Optional space-separated role names to delete now (bypass date cutoff)'
+        required: false
+        default: ''
 
 permissions:
   id-token: write
@@ -24,6 +29,8 @@ jobs:
           role-session-name: battlesnake-role-cleanup
 
       - name: Cleanup expired roles
+        env:
+          FORCE_ROLES: ${{ inputs.force_roles }}
         run: |
           chmod +x scripts/cleanup_expired_roles.sh
           ./scripts/cleanup_expired_roles.sh
