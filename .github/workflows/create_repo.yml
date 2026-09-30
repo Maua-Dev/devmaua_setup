@@ -506,9 +506,7 @@ jobs:
 
           message="Thanks for using the Issue to repo creation! :smile: Now you can find your repo at [${{needs.process_issue.outputs.project_name}}](https://github.com/Maua-Dev/${{needs.process_issue.outputs.project_name}}) :rocket:"
           if [ "${{ needs.process_issue.outputs.is_battlesnake }}" = "true" ]; then
-            message="$message
-
-Battlesnake deploy uses a **scoped temporary OIDC role** (\`gha-battlesnake-${{needs.process_issue.outputs.project_name}}\`) that expires on **2026-10-12**. Secret \`AWS_DEPLOY_ROLE_ARN\` was set on the repo."
+            message="${message}"$'\n\n'"Battlesnake deploy uses a scoped temporary OIDC role (gha-battlesnake-${{needs.process_issue.outputs.project_name}}) that expires on 2026-10-12. Secret AWS_DEPLOY_ROLE_ARN was set on the repo."
           fi
 
           {
