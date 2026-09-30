@@ -120,7 +120,8 @@
         "iam:ListInstanceProfilesForRole"
       ],
       "Resource": [
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_NAME}-*"
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_NAME}-*",
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_NAME}-*"
       ]
     },
     {
@@ -128,7 +129,8 @@
       "Effect": "Allow",
       "Action": ["iam:CreateRole"],
       "Resource": [
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_NAME}-*"
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_NAME}-*",
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_NAME}-*"
       ],
       "Condition": {
         "StringEquals": {
@@ -141,7 +143,8 @@
       "Effect": "Allow",
       "Action": ["iam:PassRole"],
       "Resource": [
-        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_NAME}-*"
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake-${REPO_NAME}-*",
+        "arn:aws:iam::${AWS_ACCOUNT_ID}:role/battlesnake/battlesnake-${REPO_NAME}-*"
       ],
       "Condition": {
         "StringEquals": {
