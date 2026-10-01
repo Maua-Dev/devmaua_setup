@@ -22,6 +22,15 @@
       "Resource": "*"
     },
     {
+      "Sid": "AllowLambdaEnvKmsDecrypt",
+      "Effect": "Allow",
+      "Action": [
+        "kms:Decrypt",
+        "kms:DescribeKey"
+      ],
+      "Resource": "arn:aws:kms:*:*:key/*"
+    },
+    {
       "Sid": "AllowSharedBattlesnakeSns",
       "Effect": "Allow",
       "Action": [
@@ -80,6 +89,8 @@
         "ecr:BatchCheckLayerAvailability",
         "ecr:GetDownloadUrlForLayer",
         "ecr:BatchGetImage",
+        "kms:Decrypt",
+        "kms:DescribeKey",
         "iam:PassRole",
         "iam:GetRole",
         "iam:CreateRole",

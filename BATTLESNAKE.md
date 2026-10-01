@@ -88,6 +88,10 @@ Templates must set `function_name` / `roleName` / stack name explicitly. CDK aut
 
 Caps what a participant Lambda exec role (and related creates) can ever get: Lambda, logs, CW, CFN, S3, API GW, shared SNS `sns-battlesnake`, limited IAM on `battlesnake-*` / CDK bootstrap roles. No IAM admin.
 
+Also allows `kms:Decrypt` / `kms:DescribeKey` on account keys: Lambda encrypts **environment variables** at rest with the account `aws/lambda` CMK, and the **exec role** must decrypt them on cold start. Without this, any function that sets env vars (Node `STAGE`, JS `NODE_OPTIONS`, Rust `RUST_LOG`, etc.) fails invoke with `AccessDeniedException` on `kms:Decrypt` and Function URL/API GW return 502 — often with **no app logs**. FastAPI currently sets no Lambda env vars, so it could work before this grant.
+
+Updating this managed policy (Bootstrap Battlesnake IAM) applies immediately to all roles that use the boundary; no per-repo redeploy required for the KMS fix.
+
 File: `iam/pb-battlesnake-participant.json`
 
 ### 2. Provisioner — `BattlesnakeRoleProvisioner`
